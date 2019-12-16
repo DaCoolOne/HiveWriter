@@ -1,18 +1,11 @@
-
+"""
+Holds constants for the drones.
+"""
 
 BPM = 120
 MPB = 1/BPM
 
 Div_60 = 1/60
-
-"""
-***
-* *
-***
-* *
-
-
-"""
 
 # Character map for writing in the sky
 CHARACTER = {
