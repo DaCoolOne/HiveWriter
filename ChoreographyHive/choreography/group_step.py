@@ -35,9 +35,8 @@ class DroneListStep(GroupStep):
 
 class DroneWriteStep(GroupStep):
 	"""
-	Takes a function that receives the entire drone list. More powerful but less
-	convenient than PerDroneStep. It should be possible to accomplish almost anything
-	with this one.
+	Similar to DroneListStep, but this function is specifically focused on writing
+	letters with drones.
 	"""
 	def __init__(self, game_interface, v, scale, s: str, duration: float):
 		self.game_interface = game_interface
