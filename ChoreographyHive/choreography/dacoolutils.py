@@ -128,6 +128,11 @@ class Vec3:
     def cast_np(v):
         return Vec3(v[0], v[1], v[2])
 
+class Car_Target:
+	def __init__(self, pos, up = Vec3()):
+		self.pos = pos
+		self.up = up
+
 class Rotator:
 	
 	def __init__(self, yaw = 0, pitch = 0, roll = 0):

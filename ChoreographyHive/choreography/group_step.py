@@ -135,11 +135,14 @@ class DroneFlyStep(GroupStep):
 		fly_pattern = self.fly_pattern(drones, packet.game_info.seconds_elapsed - self.start_time)
 		
 		for i, drone_pos in enumerate(fly_pattern):
-			drone = drones[i]
-			if not drone:
+			
+			if i >= len(drones):
+				print(f"Warning, index {i} does not exist")
 				break
-			dv = get_dv(packet, drone, drone_pos, self.path_strictness)
-			Align_Car_Fast(drone, dv, Vec3(0, 0, 1))
+			
+			drone = drones[i]
+			dv = get_dv(packet, drone, drone_pos.pos, self.path_strictness)
+			Align_Car_Fast(drone, dv, drone_pos.up)
 			drone.ctrl.boost = dv.length() > 600
 			drone.ctrl.jump = drone.has_wheel_contact
 			drone.ctrl.throttle = 1

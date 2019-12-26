@@ -7,7 +7,7 @@ from rlbot.utils.structures.game_interface import GameInterface
 from choreography.choreography import Choreography
 from choreography.drone import slow_to_pos
 from choreography.group_step import *
-from choreography.dacoolutils import Vec3
+from choreography.dacoolutils import Car_Target, Vec3, clamp
 
 class WriterChoreography(Choreography):
     """
@@ -23,12 +23,11 @@ class WriterChoreography(Choreography):
 
         pause_time = 1.5
 
-        self.sequence.append(DroneListStep(self.hide_ball))
         # self.sequence.append(DroneListStep(self.line_up))
         # self.sequence.append(BlindBehaviorStep(SimpleControllerState(), pause_time))
         # self.sequence.append(DroneListStep(self.line_up))
         # self.sequence.append(BlindBehaviorStep(SimpleControllerState(), pause_time))
-        self.sequence.append(DroneListStep(self.place_near_ceiling))
+        # self.sequence.append(DroneListStep(self.place_near_ceiling))
         # self.sequence.append(BlindBehaviorStep(SimpleControllerState(), 0.1))
         # self.sequence.append(PerDroneStep(self.drift_downward, 20))
         # self.sequence.append(BlindBehaviorStep(SimpleControllerState(), 0.5))
@@ -41,112 +40,132 @@ class WriterChoreography(Choreography):
         # Teleport outside of map.
         # self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "", 1))
 
+        self.sequence.append(DroneListStep(self.hide_ball))
         self.sequence.append(DroneFlyStep(self.spinning_cars, 100, 1))
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "", 17))
+
+        # self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "", 17))
 
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 1000], [300, 300, 300], "I dont", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [900, 0, 1000], [300, 300, 300], "want to", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 500], [300, 300, 300], "feel this", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [1200, 0, 500], [500, 500, 500], "way", 1.5))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 1000], [300, 300, 300], "I dont", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [900, 0, 1000], [300, 300, 300], "want to", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 500], [300, 300, 300], "feel this", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [1200, 0, 500], [500, 500, 500], "way", 1.5))
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 1000], [300, 300, 300], "but its", 0.5))
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1100, 0, 500], [300, 300, 300], "not that", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [1200, 0, 800], [500, 500, 500], "easy", 1.5)) # 8
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 1000], [300, 300, 300], "but its", 0.5))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1100, 0, 500], [300, 300, 300], "not that", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [1200, 0, 800], [500, 500, 500], "easy", 1.5)) # 8
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 1000], [300, 300, 300], "Complicating", 2))
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1100, 0, 500], [300, 300, 300], "things for", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [1400, 0, 500], [500, 500, 500], "me", 1.5))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 1000], [300, 300, 300], "Complicating", 2))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1100, 0, 500], [300, 300, 300], "things for", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [1400, 0, 500], [500, 500, 500], "me", 1.5))
         
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 1000], [300, 300, 300], "no its", 0.5))
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1100, 0, 500], [300, 300, 300], "not that", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [1200, 0, 800], [500, 500, 500], "easy", 1.5))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 1000], [300, 300, 300], "no its", 0.5))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1100, 0, 500], [300, 300, 300], "not that", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [1200, 0, 800], [500, 500, 500], "easy", 1.5))
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 1000], [300, 300, 300], "Maybe just a", 1)) # 8
-        self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "little time", 1.5))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 1000], [300, 300, 300], "Maybe just a", 1)) # 8
+        # self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "little time", 1.5))
         
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1200, 0, 1000], [300, 300, 300], "can heal me", 1.5))
-        self.sequence.append(DroneWriteStep(self.game_interface, [1600, 0, 1000], [300, 300, 300], "but it", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1500, 0, 500], [300, 300, 300], "doesnt feel the", 1.5))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1200, 0, 1000], [300, 300, 300], "can heal me", 1.5))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [1600, 0, 1000], [300, 300, 300], "but it", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1500, 0, 500], [300, 300, 300], "doesnt feel the", 1.5))
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [1500, 0, 500], [500, 500, 500], "way", 1.5))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [1500, 0, 500], [500, 500, 500], "way", 1.5))
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 1000], [300, 300, 300], "what are you", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 500], [300, 300, 300], "doing to", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [1000, 0, 800], [500, 500, 500], "me", 2)) # 8
+        # self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 1000], [300, 300, 300], "what are you", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 500], [300, 300, 300], "doing to", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [1000, 0, 800], [500, 500, 500], "me", 2)) # 8
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [1000, 0, 800], [500, 500, 500], " ", 4)) # 8
+        # self.sequence.append(DroneWriteStep(self.game_interface, [1000, 0, 800], [500, 500, 500], " ", 4)) # 8
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 1000], [300, 300, 300], "Watch you", 1.5))
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1300, 0, 500], [300, 300, 300], "break my", 1.5))
-        self.sequence.append(DroneWriteStep(self.game_interface, [1300, 0, 500], [500, 500, 500], "heart", 3))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 1000], [300, 300, 300], "Watch you", 1.5))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1300, 0, 500], [300, 300, 300], "break my", 1.5))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [1300, 0, 500], [500, 500, 500], "heart", 3))
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [1000, 0, 800], [500, 500, 500], " ", 1.5)) # 8
+        # self.sequence.append(DroneWriteStep(self.game_interface, [1000, 0, 800], [500, 500, 500], " ", 1.5)) # 8
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 1000], [300, 300, 300], "Left me", 1.5))
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1150, 0, 500], [300, 300, 300], "in the", 1.5))
-        self.sequence.append(DroneWriteStep(self.game_interface, [1200, 0, 500], [500, 500, 500], "dark", 3))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 1000], [300, 300, 300], "Left me", 1.5))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1150, 0, 500], [300, 300, 300], "in the", 1.5))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [1200, 0, 500], [500, 500, 500], "dark", 3))
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [1000, 0, 800], [500, 500, 500], " ", 1.5)) # 8
+        # self.sequence.append(DroneWriteStep(self.game_interface, [1000, 0, 800], [500, 500, 500], " ", 1.5)) # 8
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 1000], [300, 300, 300], "why did you", 1.5))
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1150, 0, 500], [300, 300, 300], "have to", 1.5))
-        self.sequence.append(DroneWriteStep(self.game_interface, [1200, 0, 500], [500, 500, 500], "go", 3))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 1000], [300, 300, 300], "why did you", 1.5))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1150, 0, 500], [300, 300, 300], "have to", 1.5))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [1200, 0, 500], [500, 500, 500], "go", 3))
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [1000, 0, 800], [500, 500, 500], " ", 2)) # 8
+        # self.sequence.append(DroneWriteStep(self.game_interface, [1000, 0, 800], [500, 500, 500], " ", 2)) # 8
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 1000], [300, 300, 300], "I dont", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [900, 0, 1000], [300, 300, 300], "want to", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 500], [300, 300, 300], "feel this", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [1500, 0, 500], [500, 500, 500], "way", 3))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 1000], [300, 300, 300], "I dont", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [900, 0, 1000], [300, 300, 300], "want to", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 500], [300, 300, 300], "feel this", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [1500, 0, 500], [500, 500, 500], "way", 3))
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [1000, 0, 800], [500, 500, 500], " ", 1)) # 8
+        # self.sequence.append(DroneWriteStep(self.game_interface, [1000, 0, 800], [500, 500, 500], " ", 1)) # 8
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Though", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Im", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Broken", 2))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Im", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "still", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "hoping", 2))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "I", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "could", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "be", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "with", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "you", 4))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Though", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Im", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Broken", 2))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Im", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "still", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "hoping", 2))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "I", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "could", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "be", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "with", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "you", 4))
 
         # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "", 0.5))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Im still", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Breathing", 2))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Its", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "not", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "easy", 2))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Im", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "just", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "a", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [800, 800, 800], "fool", 3))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [800, 800, 800], "for", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [800, 800, 800], "you", 2))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Im still", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Breathing", 2))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Its", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "not", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "easy", 2))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Im", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "just", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "a", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [800, 800, 800], "fool", 3))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [800, 800, 800], "for", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [800, 800, 800], "you", 2))
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [800, 800, 800], "", 23))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [800, 800, 800], "", 23))
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Im", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "just", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "a", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [800, 800, 800], "fool", 3))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [800, 800, 800], "for", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [800, 800, 800], "you", 2))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Im", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "just", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "a", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [800, 800, 800], "fool", 3))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [800, 800, 800], "for", 1))
+        # self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [800, 800, 800], "you", 2))
 
 
     def spinning_cars(self, drones, time):
-        num_cars = len(drones)
-        theta = time * 0.5
-        spacing = math.pi * 2 / num_cars
+        num_cars_a_ring = 4
+        num_cars_b_ring = 8
+        num_cars_c_ring = 12
+
+        theta = time * 0.2
+
+        height = clamp((time - 10) * 20, -100, 500)
+        width = max(1, 1 + (10 - time) * 0.05)
+
+        spacing_a = math.pi * 2 / num_cars_a_ring
+        spacing_b = math.pi * 2 / num_cars_b_ring
+        spacing_c = math.pi * 2 / num_cars_c_ring
+
         r_list = []
-        for i in range(num_cars):
-            a = i * spacing + theta
-            r_list.append(Vec3(0, 6500, 4000) + Vec3(math.sin(a) * 500, math.cos(a) * 500, math.cos(a + theta * 2) * 250))
+        for i in range(num_cars_a_ring):
+            a = i * spacing_a + theta
+            r_list.append(Car_Target(Vec3(0, 0, 1000 + height) + Vec3(math.sin(a) * 65, math.cos(a) * 65) * width, Vec3(math.sin(a), math.cos(a))))
+        
+        for i in range(num_cars_b_ring):
+            a = i * spacing_b - theta
+            r_list.append(Car_Target(Vec3(0, 0, 850 + height) + Vec3(math.sin(a) * 200, math.cos(a) * 200, math.cos(a + theta * 10) * 25) * width, Vec3(math.sin(a), math.cos(a))))
+        
+        for i in range(num_cars_c_ring):
+            a = i * spacing_c + theta
+            r_list.append(Car_Target(Vec3(0, 0, 700 + height) + Vec3(math.sin(a) * 300, math.cos(a) * 300, math.cos(a - theta * 10) * 50) * width, Vec3(math.sin(a), math.cos(a))))
         return r_list
 
     def wave_jump(self, packet, drone, start_time) -> StepResult:
@@ -224,7 +243,7 @@ class WriterChoreography(Choreography):
         Places the ball above the roof of the arena to keep it out of the way.
         """
         self.game_interface.set_game_state(GameState(ball=BallState(physics=Physics(
-            location=Vector3(0, 6500, 3000),
+            location=Vector3(0, 0, 1500),
             velocity=Vector3(0, 0, 0),
             angular_velocity=Vector3(0, 0, 0)))))
         return StepResult(finished=True)

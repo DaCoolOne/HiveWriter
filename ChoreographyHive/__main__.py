@@ -29,7 +29,7 @@ try:
 	if __name__ == '__main__':
 		arguments = docopt(__doc__)
 		
-		min_bots = 16 # min(int(arguments['--min-bots']), MAX_PLAYERS)
+		min_bots = 24 # min(int(arguments['--min-bots']), MAX_PLAYERS)
 		bot_directory = arguments['--bot-folder']
 		bundles = scan_directory_for_bot_configs(bot_directory)
 		
