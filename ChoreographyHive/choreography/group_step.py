@@ -10,6 +10,8 @@ from choreography.drone import Drone
 
 from choreography.constants import BPM, MPB, Div_60, CHARACTER
 
+from choreography.dacoolutils import Align_Car_Fast, delta_v, Vec3
+
 class StepResult:
 	def __init__(self, finished: bool = False):
 		self.finished = finished
@@ -112,6 +114,40 @@ class DroneWriteStep(GroupStep):
 		
 		return StepResult(finished = beat >= self.duration)
 
+def get_dv(packet, drone, drone_pos, t):
+	for i in range(50):
+		dv = delta_v(packet, drone, drone_pos, t + i * 0.1)
+		if dv.length() < 1066:
+			break
+	return dv
+
+class DroneFlyStep(GroupStep):
+	def __init__(self, fly_pattern: Callable[[List, float], List], max_duration: float, path_strictness: float):
+		self.fly_pattern = fly_pattern
+		self.max_duration = max_duration
+		self.path_strictness = path_strictness
+		self.start_time = 0
+	
+	def perform(self, packet, drones):
+		if not self.start_time:
+			self.start_time = packet.game_info.seconds_elapsed
+		
+		fly_pattern = self.fly_pattern(drones, packet.game_info.seconds_elapsed - self.start_time)
+		
+		for i, drone_pos in enumerate(fly_pattern):
+			drone = drones[i]
+			if not drone:
+				break
+			dv = get_dv(packet, drone, drone_pos, self.path_strictness)
+			Align_Car_Fast(drone, dv, Vec3(0, 0, 1))
+			drone.ctrl.boost = dv.length() > 600
+			drone.ctrl.jump = drone.has_wheel_contact
+			drone.ctrl.throttle = 1
+		
+		return StepResult(finished=packet.game_info.seconds_elapsed > self.start_time + self.max_duration)
+		
+		
+
 class PerDroneStep(GroupStep):
 	"""
 	Takes a function and applies it to every drone individually. They can still behave differently
@@ -148,3 +184,4 @@ class BlindBehaviorStep(PerDroneStep):
 	def blind(self, packet: GameTickPacket, drone: Drone, elapsed: float):
 		drone.ctrl = self.controls
 		return StepResult(finished=False)
+

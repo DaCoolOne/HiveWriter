@@ -6,7 +6,8 @@ from rlbot.utils.structures.game_interface import GameInterface
 
 from choreography.choreography import Choreography
 from choreography.drone import slow_to_pos
-from choreography.group_step import BlindBehaviorStep, DroneListStep, StepResult, PerDroneStep, DroneWriteStep
+from choreography.group_step import *
+from choreography.dacoolutils import Vec3
 
 class WriterChoreography(Choreography):
     """
@@ -22,12 +23,12 @@ class WriterChoreography(Choreography):
 
         pause_time = 1.5
 
-        # self.sequence.append(DroneListStep(self.hide_ball))
+        self.sequence.append(DroneListStep(self.hide_ball))
         # self.sequence.append(DroneListStep(self.line_up))
         # self.sequence.append(BlindBehaviorStep(SimpleControllerState(), pause_time))
         # self.sequence.append(DroneListStep(self.line_up))
         # self.sequence.append(BlindBehaviorStep(SimpleControllerState(), pause_time))
-        # self.sequence.append(DroneListStep(self.place_near_ceiling))
+        self.sequence.append(DroneListStep(self.place_near_ceiling))
         # self.sequence.append(BlindBehaviorStep(SimpleControllerState(), 0.1))
         # self.sequence.append(PerDroneStep(self.drift_downward, 20))
         # self.sequence.append(BlindBehaviorStep(SimpleControllerState(), 0.5))
@@ -35,6 +36,12 @@ class WriterChoreography(Choreography):
         # self.sequence.append(DroneListStep(self.circular_procession))
 
         # self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "ABCDEFGH", 18))
+
+        # Testing
+        # Teleport outside of map.
+        # self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "", 1))
+
+        self.sequence.append(DroneFlyStep(self.spinning_cars, 100, 1))
 
         self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "", 17))
 
@@ -132,7 +139,15 @@ class WriterChoreography(Choreography):
         self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [800, 800, 800], "you", 2))
 
 
-
+    def spinning_cars(self, drones, time):
+        num_cars = len(drones)
+        theta = time * 0.5
+        spacing = math.pi * 2 / num_cars
+        r_list = []
+        for i in range(num_cars):
+            a = i * spacing + theta
+            r_list.append(Vec3(0, 6500, 4000) + Vec3(math.sin(a) * 500, math.cos(a) * 500, math.cos(a + theta * 2) * 250))
+        return r_list
 
     def wave_jump(self, packet, drone, start_time) -> StepResult:
         """
@@ -177,23 +192,23 @@ class WriterChoreography(Choreography):
         self.game_interface.set_game_state(GameState(cars=car_states))
         return StepResult(finished=True)
 
-    def place_near_ceiling(self, packet, drones, start_time) -> StepResult:
+    def place_near_ceiling(self, packet, drones, start_time, beat) -> StepResult:
         """
         Puts all the cars in a tidy line close to the ceiling.
         """
-        start_x = 2000
+        start_x = 6500
         y_increment = 100
         start_y = -len(drones) * y_increment / 2
-        start_z = 1900
+        start_z = 1500
         car_states = {}
         for drone in drones:
             car_states[drone.index] = CarState(
-                Physics(location=Vector3(start_x, start_y + drone.index * y_increment, start_z),
+                Physics(location=Vector3(start_y + drone.index * y_increment, start_x, start_z),
                         velocity=Vector3(0, 0, 0),
                         angular_velocity=Vector3(0, 0, 0),
                         rotation=Rotator(math.pi * 1, 0, 0)))
         self.game_interface.set_game_state(GameState(cars=car_states))
-        return StepResult(finished=True)
+        return StepResult(finished=packet.game_info.seconds_elapsed-start_time>0.2)
 
     def drift_downward(self, packet, drone, start_time) -> StepResult:
         """
@@ -204,12 +219,12 @@ class WriterChoreography(Choreography):
         wheel_contact = packet.game_cars[drone.index].has_wheel_contact
         return StepResult(finished=wheel_contact)
 
-    def hide_ball(self, packet, drones, start_time) -> StepResult:
+    def hide_ball(self, packet, drones, start_time, beat) -> StepResult:
         """
         Places the ball above the roof of the arena to keep it out of the way.
         """
         self.game_interface.set_game_state(GameState(ball=BallState(physics=Physics(
-            location=Vector3(0, 0, 3000),
+            location=Vector3(0, 6500, 3000),
             velocity=Vector3(0, 0, 0),
             angular_velocity=Vector3(0, 0, 0)))))
         return StepResult(finished=True)

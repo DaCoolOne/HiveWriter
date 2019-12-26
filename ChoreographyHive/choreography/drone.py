@@ -1,6 +1,6 @@
 import numpy as np
-from rlbot.agents.base_agent import SimpleControllerState
 
+from rlbot.agents.base_agent import SimpleControllerState
 from rlbot.utils.structures.game_data_struct import Rotator, Vector3, PlayerInfo
 
 
@@ -12,19 +12,27 @@ class Drone:
         self.rot: np.ndarray = np.zeros(3)
         self.vel: np.ndarray = np.zeros(3)
         self.boost: float = 0.0
+        self.has_wheel_contact = False
         self.orient_m: np.ndarray = np.identity(3)
         self.ctrl: SimpleControllerState = SimpleControllerState()
+        self.ang_vel: np.ndarray = np.zeros(3)
 
     def update(self, game_car: PlayerInfo):
         self.pos = a3v(game_car.physics.location)
         self.rot = a3r(game_car.physics.rotation)
         self.vel = a3v(game_car.physics.velocity)
+        self.ang_vel = a3v(game_car.physics.angular_velocity) # Why didn't this get put in earlier?!?!?!?
         self.boost = game_car.boost
         self.orient_m = orient_matrix(self.rot)
+        self.has_wheel_contact = game_car.has_wheel_contact
 
         # Reset ctrl every tick.
         self.ctrl = SimpleControllerState()
 
+def special_sauce(x, a):
+    """Modified sigmoid to smooth out steering."""
+    # Graph: https://www.geogebra.org/m/udfp2zcy
+    return 2 / (1 + np.exp(a * x)) - 1
 
 def slow_to_pos(drone, position):
     # Calculate distance and velocity.
@@ -34,11 +42,6 @@ def slow_to_pos(drone, position):
     local_target = local(drone.orient_m, drone.pos, position)
     # Finds 2D angle to target. Positive is clockwise.
     angle = np.arctan2(local_target[1], local_target[0])
-
-    def special_sauce(x, a):
-        """Modified sigmoid to smooth out steering."""
-        # Graph: https://www.geogebra.org/m/udfp2zcy
-        return 2 / (1 + np.exp(a * x)) - 1
 
     # Calculates steer.
     drone.ctrl.steer = special_sauce(angle, -5)
