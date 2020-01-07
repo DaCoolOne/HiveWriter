@@ -8,16 +8,17 @@ from rlbot.utils.game_state_util import GameState, CarState, Physics, Vector3, R
 
 from choreography.drone import Drone
 
-from choreography.constants import BPM, MPB, Div_60, CHARACTER
+from choreography.constants import BPM, Div_60, CHARACTER
 
 from choreography.dacoolutils import Align_Car_Fast, delta_v, Vec3
 
 class StepResult:
-	def __init__(self, finished: bool = False):
+	def __init__(self, finished: bool = False, execute_time: float = 0):
 		self.finished = finished
+		self.execute_time = execute_time
 
 class GroupStep:
-	def perform(self, packet: GameTickPacket, drones: List[Drone]) -> StepResult:
+	def perform(self, packet: GameTickPacket, drones: List[Drone], beat: float) -> StepResult:
 		pass
 
 class DroneListStep(GroupStep):
@@ -28,12 +29,10 @@ class DroneListStep(GroupStep):
 	"""
 	def __init__(self, fn: Callable[[GameTickPacket, List[Drone], float], StepResult]):
 		self.fn = fn
-		self.start_time = None
+		self.start_beat = None
 	
-	def perform(self, packet, drones):
-		if not self.start_time:
-			self.start_time = packet.game_info.seconds_elapsed
-		return self.fn(packet, drones, self.start_time, (packet.game_info.seconds_elapsed - self.start_time) * Div_60 * BPM)
+	def perform(self, packet, drones, beat):
+		return self.fn(packet, drones, self.start_beat, beat)
 
 class DroneWriteStep(GroupStep):
 	"""
@@ -50,22 +49,18 @@ class DroneWriteStep(GroupStep):
 			c = l.lower()
 			print(c)
 			if c in CHARACTER:
-				print("exists")
 				self.chars.append(CHARACTER.get(c))
 			else:
-				print("does not exist")
+				print(f"Undefined character {c}")
 				self.chars.append(CHARACTER[" "])
 			self.frame.append(0)
 		
-		self.start_time = None
+		self.start_beat = None
 		self.duration = duration
 		self.do_step = False
 		self.first = True
 
-	def perform(self, packet, drones):
-		if not self.start_time:
-			self.start_time = packet.game_info.seconds_elapsed
-		beat = (packet.game_info.seconds_elapsed - self.start_time) * Div_60 * BPM
+	def perform(self, packet, drones, beat):
 		car_states = {}
 		
 		w = self.scale[0] * 0.25
@@ -112,7 +107,7 @@ class DroneWriteStep(GroupStep):
 		
 		self.first = False
 		
-		return StepResult(finished = beat >= self.duration)
+		return StepResult(beat - self.start_beat >= self.duration, self.duration)
 
 def get_dv(packet, drone, drone_pos, t):
 	for i in range(50):
@@ -126,13 +121,11 @@ class DroneFlyStep(GroupStep):
 		self.fly_pattern = fly_pattern
 		self.max_duration = max_duration
 		self.path_strictness = path_strictness
-		self.start_time = 0
+		self.start_beat = None
 	
-	def perform(self, packet, drones):
-		if not self.start_time:
-			self.start_time = packet.game_info.seconds_elapsed
+	def perform(self, packet, drones, beat):
 		
-		fly_pattern = self.fly_pattern(drones, packet.game_info.seconds_elapsed - self.start_time)
+		fly_pattern = self.fly_pattern(drones, beat - self.start_beat)
 		
 		for i, drone_pos in enumerate(fly_pattern):
 			
@@ -147,7 +140,7 @@ class DroneFlyStep(GroupStep):
 			drone.ctrl.jump = drone.has_wheel_contact
 			drone.ctrl.throttle = 1
 		
-		return StepResult(finished=packet.game_info.seconds_elapsed > self.start_time + self.max_duration)
+		return StepResult(beat >= self.start_beat + self.max_duration, self.duration)
 		
 		
 
@@ -159,20 +152,18 @@ class PerDroneStep(GroupStep):
 	def __init__(self, bot_fn: Callable[[GameTickPacket, Drone, float], StepResult], max_duration: float):
 		self.bot_fn = bot_fn
 		self.max_duration = max_duration
-		self.start_time = None
+		self.start_beat = None
 
-	def perform(self, packet, drones: List[Drone]):
-		if not self.start_time:
-			self.start_time = packet.game_info.seconds_elapsed
+	def perform(self, packet, drones: List[Drone], beat):
 
-		if packet.game_info.seconds_elapsed > self.start_time + self.max_duration:
-			return StepResult(finished=True)
+		if beat > self.start_beat + self.max_duration:
+			return StepResult(True, self.max_duration)
 
 		finished = True
 		for drone in drones:
-			result = self.bot_fn(packet, drone, self.start_time)
+			result = self.bot_fn(packet, drone, self.start_beat, beat)
 			finished = not result.finished and finished
-		return StepResult(finished=finished)
+		return StepResult(finished)
 
 
 class BlindBehaviorStep(PerDroneStep):
@@ -183,8 +174,9 @@ class BlindBehaviorStep(PerDroneStep):
 	def __init__(self, controls: SimpleControllerState, duration: float):
 		super().__init__(self.blind, duration)
 		self.controls = controls
+		self.duration = duration
 
 	def blind(self, packet: GameTickPacket, drone: Drone, elapsed: float):
 		drone.ctrl = self.controls
-		return StepResult(finished=False)
+		return StepResult(False, self.duration)
 
