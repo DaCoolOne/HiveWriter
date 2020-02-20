@@ -11,15 +11,73 @@ from choreography.drone import Drone
 from choreography.constants import BPM, Div_60, CHARACTER
 
 from choreography.dacoolutils import Align_Car_Fast, delta_v, Vec3
+from choreography.dacoolutils import Rotator as Rotation
 
 class StepResult:
 	def __init__(self, finished: bool = False, execute_time: float = 0):
 		self.finished = finished
-		self.execute_time = execute_time
+		self.execute_time = execute_time if finished else 0
 
 class GroupStep:
 	def perform(self, packet: GameTickPacket, drones: List[Drone], beat: float) -> StepResult:
-		pass
+		return StepResult()
+	def set_start_beat(self, start_beat):
+		self.start_beat = start_beat
+
+# Merges two group steps and performs them at the same time. Only one group step needs to terminate.
+class MergeStep(GroupStep):
+	def __init__(self, merge_list: List[GroupStep], bot_list: List[int]):
+		if len(merge_list) != len(bot_list):
+			raise ValueError
+		self.groups = merge_list
+		self.group_counts = bot_list
+	
+	def set_start_beat(self, start_beat):
+		for group in self.groups:
+			group.set_start_beat(start_beat)
+	
+	def perform(self, packet: GameTickPacket, drones: List[Drone], beat: float) -> StepResult:
+		finished = False
+		finish_duration = 0
+		index = 0
+		for i, count in enumerate(self.group_counts):
+			d = drones[index : index + count]
+			o = self.groups[i].perform(packet, d, beat)
+			
+			index += count
+			
+			finished = finished or o.finished
+			finish_duration = max(finish_duration, o.execute_time)
+		
+		return StepResult(finished, finish_duration)
+		
+
+# Type of step that exectutes a list of steps in sequence.
+class SequentialStep(GroupStep):
+	def __init__(self, merge_list: List[GroupStep] = []):
+		self.groups = merge_list
+		self.sum_time = 0
+		self.current_index = 0
+	def append(self, a: GroupStep):
+		self.groups.append(a)
+	def set_start_beat(self, start_beat):
+		self.start_beat = start_beat
+		if len(self.groups) > 0:
+			self.groups[0].set_start_beat(self.start_beat + self.sum_time)
+		
+	def perform(self, packet: GameTickPacket, drones: List[Drone], beat: float) -> StepResult:
+		if self.current_index < len(self.groups):
+			result = self.groups[self.current_index].perform(packet, drones, beat)
+			
+			if result.finished:
+				self.current_index += 1
+				self.sum_time += result.execute_time
+				
+				if self.current_index < len(self.groups):
+					self.groups[self.current_index].set_start_beat(self.start_beat + self.sum_time)
+		
+		return StepResult(self.current_index >= len(self.groups), self.sum_time)
+	
 
 class DroneListStep(GroupStep):
 	"""
@@ -117,15 +175,15 @@ def get_dv(packet, drone, drone_pos, t):
 	return dv
 
 class DroneFlyStep(GroupStep):
-	def __init__(self, fly_pattern: Callable[[List, float], List], max_duration: float, path_strictness: float):
+	def __init__(self, fly_pattern: Callable[[List, float], List], duration: float, path_strictness: float):
 		self.fly_pattern = fly_pattern
-		self.max_duration = max_duration
+		self.duration = duration
 		self.path_strictness = path_strictness
 		self.start_beat = None
 	
 	def perform(self, packet, drones, beat):
 		
-		fly_pattern = self.fly_pattern(drones, beat - self.start_beat)
+		fly_pattern = self.fly_pattern(packet, drones, beat - self.start_beat)
 		
 		for i, drone_pos in enumerate(fly_pattern):
 			
@@ -134,35 +192,105 @@ class DroneFlyStep(GroupStep):
 				break
 			
 			drone = drones[i]
-			dv = get_dv(packet, drone, drone_pos.pos, self.path_strictness)
-			Align_Car_Fast(drone, dv, drone_pos.up)
+			if drone_pos.pos:
+				dv = get_dv(packet, drone, drone_pos.pos, self.path_strictness)
+				Align_Car_Fast(drone, dv, drone_pos.up)
+				drone.ctrl.boost = dv.length() > 600
+				drone.ctrl.jump = drone.has_wheel_contact
+				drone.ctrl.throttle = 1
+			else:
+				dv = Vec3(1).align_to(Rotation.cast_np(drone.rot))
+				Align_Car_Fast(drone, dv, drone_pos.up)
+		
+		return StepResult(beat >= self.start_beat + self.duration, self.duration)
+		
+		
+
+class FireworksStep(GroupStep):
+	def __init__(self, game_interface, start_loc, end_loc, end_time, duration):
+		self.game_interface = game_interface
+		
+		self.start_loc = start_loc
+		self.end_loc = end_loc
+		self.end_time = end_time
+		
+		self.start_beat = None
+		
+		self.stage = 0
+		
+		self.duration = duration
+	
+	def perform(self, packet, drones, beat):
+		current_time = beat - self.start_beat
+		
+		if self.stage == 0:
+			car_states = {}
+			
+			car_states[drones[0].index] = CarState(
+				Physics(location=Vector3(self.start_loc.x, self.start_loc.y, self.start_loc.z),
+						velocity=Vector3(0, 0, 300),
+						angular_velocity=Vector3(0, 0, 0),
+						rotation=Rotator(math.pi * 0.5, 0, 0)))
+			
+			self.game_interface.set_game_state(GameState(cars=car_states))
+			self.stage = 1
+		
+		if self.stage == 1:
+			
+			drone = drones[0]
+			
+			side = Vec3(y=1).align_to(Rotation.cast_np(drone.rot))
+			
+			dv = get_dv(packet, drone, self.end_loc, 0.1)
+			Align_Car_Fast(drone, dv, side)
 			drone.ctrl.boost = dv.length() > 600
-			drone.ctrl.jump = drone.has_wheel_contact
 			drone.ctrl.throttle = 1
+			
+			if current_time > self.end_time:
+				car_states = {}
+				
+				car_pos = Vec3.cast_np(drone.pos)
+				
+				for i in range(len(drones)):
+					a = (i / len(drones)) * math.pi * 2
+					v = Vec3(math.cos(a), math.sin(a)) * 100
+					
+					car_states[drones[i].index] = CarState(
+						Physics(location=Vector3(car_pos.x + v.x, car_pos.y + v.y, car_pos.z),
+							velocity=Vector3(0, 0, 700),
+							angular_velocity=Vector3(0, 0, 0),
+							rotation=Rotator(0.1, a, 0)))
+				
+				self.game_interface.set_game_state(GameState(cars=car_states))
+				
+				self.stage = 2
+			
+		elif self.stage == 2:
+			for drone in drones:
+				drone.ctrl.boost = True
+			
 		
-		return StepResult(beat >= self.start_beat + self.max_duration, self.duration)
-		
-		
+		return StepResult(beat >= self.start_beat + self.duration, self.duration)
 
 class PerDroneStep(GroupStep):
 	"""
 	Takes a function and applies it to every drone individually. They can still behave differently
 	because you have access to the drone's index, position, velocity, etc.
 	"""
-	def __init__(self, bot_fn: Callable[[GameTickPacket, Drone, float], StepResult], max_duration: float):
+	def __init__(self, bot_fn: Callable[[GameTickPacket, Drone, float], StepResult], duration: float):
 		self.bot_fn = bot_fn
-		self.max_duration = max_duration
+		self.duration = duration
 		self.start_beat = None
 
 	def perform(self, packet, drones: List[Drone], beat):
 
-		if beat > self.start_beat + self.max_duration:
-			return StepResult(True, self.max_duration)
+		if beat > self.start_beat + self.duration:
+			return StepResult(True, self.duration)
 
 		finished = True
 		for drone in drones:
 			result = self.bot_fn(packet, drone, self.start_beat, beat)
-			finished = not result.finished and finished
+			finished = result.finished and finished
 		return StepResult(finished)
 
 
@@ -171,12 +299,15 @@ class BlindBehaviorStep(PerDroneStep):
 	For every drone in the list, output the given controls for the specified duration.
 	For example you could make everyone to boost simultaneously for .5 seconds.
 	"""
-	def __init__(self, controls: SimpleControllerState, duration: float):
+	def __init__(self, controls: SimpleControllerState, duration: float, exclude=[]):
 		super().__init__(self.blind, duration)
 		self.controls = controls
 		self.duration = duration
+		self.exclude = exclude
 
-	def blind(self, packet: GameTickPacket, drone: Drone, elapsed: float):
+	def blind(self, packet: GameTickPacket, drone: Drone, start: float, elapsed: float):
+		if drone.index in self.exclude:
+			return StepResult(False)
 		drone.ctrl = self.controls
-		return StepResult(False, self.duration)
+		return StepResult(False)
 

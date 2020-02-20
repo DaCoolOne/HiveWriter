@@ -12,7 +12,6 @@ import traceback
 import time
 
 try:
-	
 	import copy
 	import os
 	import sys
@@ -43,15 +42,48 @@ try:
 		looks_configs = {idx: bundle.get_looks_config() for idx, bundle in enumerate(bundles)}
 		names = [bundle.name for bundle in bundles]
 		
-		player_config = match_config.player_configs[0]
+		mc_id = 0
+		mc_2_id = 0
+		player_id = 0
+		
+		# Figures out which config is which
+		for i, cfg in enumerate(match_config.player_configs):
+			loadout = cfg.loadout_config
+			
+			if loadout.hat_id == 1332:
+				if loadout.car_id == 23:
+					mc_id = i + 1
+				else:
+					mc_2_id = i + 1
+			else:
+				player_id = i + 1
+			
+			if mc_2_id and mc_id and player_id:
+				print("Detected got all ids")
+				break
+		
+		mc_id -= 1
+		mc_2_id -= 1
+		player_id -= 1
+		
+		if mc_id < 0:
+			mc_config = match_config.player_configs[0]
+		else:
+			mc_config = match_config.player_configs[mc_id]
+			mc_config_2 = match_config.player_configs[mc_2_id]
+			player_config = match_config.player_configs[player_id]
+		
 		match_config.player_configs.clear()
-		for i in range(max(len(bundles), min_bots)):
-			copied = copy.copy(player_config)
-			if i < len(bundles):
-				copied.name = names[i]
-				# If you want to override bot appearances to get a certain visual effect, e.g. with
-				# specific boost colors, this is a good place to do it.
-				copied.loadout_config = load_bot_appearance(looks_configs[i], 0)
+		for i in range(min_bots):
+			if mc_2_id >= 0:
+				# copied = copy.copy(player_config if i >= 2 else (mc_config_2 if i else mc_config))
+				copied = copy.copy(player_config if i >= 1 else mc_config_2)
+				if i >= 4:
+					c2 = copy.copy(copied.loadout_config)
+					c2.boost_id = 32
+					copied.loadout_config = c2
+			else:
+				copied = copy.copy(mc_config)
 			match_config.player_configs.append(copied)
 		
 		manager = SetupManager()
@@ -68,3 +100,6 @@ except Exception as e:
 	print(traceback.format_exc())
 	while True:
 		pass
+
+print("end")
+time.sleep(2)

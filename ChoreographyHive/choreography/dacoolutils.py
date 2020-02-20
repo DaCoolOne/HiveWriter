@@ -129,7 +129,7 @@ class Vec3:
         return Vec3(v[0], v[1], v[2])
 
 class Car_Target:
-	def __init__(self, pos, up = Vec3()):
+	def __init__(self, pos = None, up = Vec3()):
 		self.pos = pos
 		self.up = up
 

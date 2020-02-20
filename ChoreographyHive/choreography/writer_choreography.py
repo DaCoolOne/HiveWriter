@@ -10,6 +10,8 @@ from choreography.group_step import *
 from choreography.dacoolutils import Car_Target, Vec3, clamp
 from choreography.dacoolutils import Rotator as Rotation
 
+file_name = "audio_cut_slow.mp3"
+
 import pygame as pg
 def play_music(music_file, volume=0.8):
     '''
@@ -28,11 +30,15 @@ def play_music(music_file, volume=0.8):
     clock = pg.time.Clock()
     try:
         pg.mixer.music.load(music_file)
+        pg.mixer.music.play()
+        while pg.mixer.music.get_pos() <= 0: # Ensure that the song has indeed loaded and is playing.
+            clock.tick(100)
         print("Music file {} loaded!".format(music_file))
     except pg.error:
         print("File {} not found! ({})".format(music_file, pg.get_error()))
         return
-    pg.mixer.music.play()
+    
+    return pg.mixer.music.get_pos() / 1000
     # while pg.mixer.music.get_busy():
         # check if playback has finished
         # clock.tick(30)
@@ -65,43 +71,55 @@ class WriterChoreography(Choreography):
         # Teleport outside of map.
         # self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "", 1))
 
-        # self.sequence.append(DroneListStep(self.hide_ball))
+        self.sequence.append(DroneListStep(self.hide_ball))
         # self.sequence.append(DroneFlyStep(self.carry_ball_to_goal, 60, 1))
         # self.sequence.append(DroneFlyStep(self.experimental_formation, 100, 1))
 
         self.sequence.append(DroneListStep(self.start_playing_music))
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "", 18))
+        self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "", 17))
 
         self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 1000], [300, 300, 300], "I dont", 1))
         self.sequence.append(DroneWriteStep(self.game_interface, [900, 0, 1000], [300, 300, 300], "want to", 1))
         self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 500], [300, 300, 300], "feel this", 1))
         self.sequence.append(DroneWriteStep(self.game_interface, [1200, 0, 500], [500, 500, 500], "way", 1.5)) # 4.5
 
+        self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "", 1))
+
         self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 1000], [300, 300, 300], "but its", 0.5))
         self.sequence.append(DroneWriteStep(self.game_interface, [-1100, 0, 500], [300, 300, 300], "not that", 1))
         self.sequence.append(DroneWriteStep(self.game_interface, [1200, 0, 800], [500, 500, 500], "easy", 1.5)) # 3
+
+        self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "", 1))
 
         self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "", 0.5)) # 8
 
         self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 1000], [300, 300, 300], "Complicating", 2))
         self.sequence.append(DroneWriteStep(self.game_interface, [-1100, 0, 500], [300, 300, 300], "things for", 1))
         self.sequence.append(DroneWriteStep(self.game_interface, [1400, 0, 500], [500, 500, 500], "me", 1.5)) # 4.5
+
+        self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "", 1))
         
         self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 1000], [300, 300, 300], "no its", 0.5))
         self.sequence.append(DroneWriteStep(self.game_interface, [-1100, 0, 500], [300, 300, 300], "not that", 1))
         self.sequence.append(DroneWriteStep(self.game_interface, [1200, 0, 800], [500, 500, 500], "easy", 1.5)) # 3
 
+        self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "", 1))
+
         self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "", 0.5)) # 8
 
         self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 1000], [300, 300, 300], "Maybe just a", 1))
         self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "little time", 1.5))
-        
+
+        self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "", 1))
+
         self.sequence.append(DroneWriteStep(self.game_interface, [-1200, 0, 1000], [300, 300, 300], "can heal me", 1.5))
         self.sequence.append(DroneWriteStep(self.game_interface, [1600, 0, 1000], [300, 300, 300], "but it", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [-1500, 0, 500], [300, 300, 300], "doesnt feel the", 1.5))
+        self.sequence.append(DroneWriteStep(self.game_interface, [-700, 0, 500], [300, 300, 300], "doesnt feel the", 1.5))
 
-        self.sequence.append(DroneWriteStep(self.game_interface, [1500, 0, 500], [500, 500, 500], "way", 1.5)) # 8
+        self.sequence.append(DroneWriteStep(self.game_interface, [1500, 0, 700], [500, 500, 500], "way", 1.5)) # 8
+
+        self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 500], [300, 300, 300], "", 1))
 
         self.sequence.append(DroneWriteStep(self.game_interface, [0, 0, 1000], [300, 300, 300], "what are you", 1))
         self.sequence.append(DroneWriteStep(self.game_interface, [-1000, 0, 500], [300, 300, 300], "doing to", 1))
@@ -149,8 +167,7 @@ class WriterChoreography(Choreography):
         self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "", 0.5))
         self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Im still", 1.5))
         self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Breathing", 2))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Its", 1))
-        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "not", 1))
+        self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Its not", 2))
         self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "easy", 2)) # 8
         self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "", 1))
         self.sequence.append(DroneWriteStep(self.game_interface, [00, 0, 500], [600, 600, 600], "Im", 1))
@@ -284,8 +301,8 @@ class WriterChoreography(Choreography):
         return StepResult(finished=True)
 
     def start_playing_music(self, packet, drones, start_time, beat) -> StepResult:
-        play_music("audio_cut.mp3", 0.5)
-        return StepResult(finished=True)
+        t = play_music(file_name, 0.5)
+        return StepResult(True,-self.to_beats(t))
 
     def place_near_ceiling(self, packet, drones, start_time, beat) -> StepResult:
         """
@@ -319,7 +336,7 @@ class WriterChoreography(Choreography):
         Places the ball above the roof of the arena to keep it out of the way.
         """
         self.game_interface.set_game_state(GameState(ball=BallState(physics=Physics(
-            location=Vector3(0, 0, 1500),
+            location=Vector3(0, 0, 15000), # Added an extra zero just to be safe
             velocity=Vector3(0, 0, 0),
             angular_velocity=Vector3(0, 0, 0)))))
         return StepResult(finished=True)
