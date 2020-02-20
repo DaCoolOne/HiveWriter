@@ -38,3 +38,7 @@ This is based on 'hivemind' code shared by Viliam Vadocz.
 Original code is here: https://github.com/ViliamVadocz/RLBot
 
 The underlying framework is explained at http://www.rlbot.org/
+
+# Easter Egg
+
+There is no easter egg.
