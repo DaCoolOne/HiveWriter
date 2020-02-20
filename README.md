@@ -1,3 +1,11 @@
+# Note:
+
+This repo is a garbage can full of all the scripts I built in order to make my choreography work. Don't ask me what any of it does, you have as much of an idea as I do. :P
+
+I recommend checking out my new contributions of MergeStep, SequenceStep, WriteStep, and my new timing system. After that, avoid this like the ~~plague~~ coronavirus.
+
+With that said, here is some stuff about the choreography framework developed that was adapted for this project:
+
 # RLBot Choreography
 
 This project can produce choreographed sequences of car motion in
